@@ -120,7 +120,7 @@ def reset_password_mysql(email, phone, new_password):
     conn.close()
 
 # --- App Setup ---
-st.set_page_config(page_title="Mobile Store", layout="wide")
+st.set_page_config(page_title="Walker Wireless", layout="wide")
 st.title("📱 Walker Wireless")
 
 if "user" not in st.session_state:
