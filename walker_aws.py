@@ -199,47 +199,52 @@ else:
             sold = phones[phones['status'] == 'Verification pending']
 
             for _, row in sold.iterrows():
-                st.markdown(f"### Phone ID: {row['id']} - {row['model']}")
-                new_status = st.selectbox(
-                    f"Update Status for Phone ID {row['id']}",
-                    options=["Verification pending", "Sold", "Rejected"],
-                    index=["Verification pending", "Sold", "Rejected"].index(row['status']),
-                    key=f"status_{row['id']}"
-                )
-                if new_status == "Sold":
-                    status = "Sold"
-                    paymentstatus = "Paid"
-                    selling_time = datetime.now()
-                elif new_status == "Rejected":
-                    status = "available"
-                    paymentstatus = ""
-                    buyer_email = ""
-                    buyer_phone = ""
-                    booking_time = ""
+                with st.expander(f"{row['model']} - Rs. {row['price']}"):
+                    st.markdown(f"**Booking Time:** {row['booking_time']}")
+                    st.markdown(f"**Payment status:** {row['payment_status']}")                
+                    st.markdown(f"**Full Payment status:** {row['full_payment']}")
+                    st.markdown(f"**Shipping status:** {row['shipping_status']}")
+                
+                    new_status = st.selectbox(
+                        f"Update Status for Phone ID {row['id']}",
+                        options=["Verification pending", "Sold", "Rejected"],
+                        index=["Verification pending", "Sold", "Rejected"].index(row['status']),
+                        key=f"status_{row['id']}"
+                    )
+                    if new_status == "Sold":
+                        status = "Sold"
+                        paymentstatus = "Paid"
+                        selling_time = datetime.now()
+                    elif new_status == "Rejected":
+                        status = "available"
+                        paymentstatus = ""
+                        buyer_email = ""
+                        buyer_phone = ""
+                        booking_time = ""
 
-                elif new_status == "Verification pending":
-                    status = "Verification pending"
-                    paymentstatus = "Pending"
+                    elif new_status == "Verification pending":
+                        status = "Verification pending"
+                        paymentstatus = "Pending"
 
-                if st.button(f"Update Phone ID {row['id']}"):
-                    if new_status == "Rejected":
-                        update_phone_mysql(int(row['id']), {
-                            'status': status,
-                            'buyer_email': buyer_email,
-                            'buyer_phone': buyer_phone,
-                            'booking_time': booking_time,
-                            'payment_status': paymentstatus
-                        })
-                    else:
-                        update_phone_mysql(int(row['id']), {
-                            'status': status,
-                            'payment_status': paymentstatus,
-                            'selling_time': selling_time
+                    if st.button(f"Update Phone ID {row['id']}"):
+                        if new_status == "Rejected":
+                            update_phone_mysql(int(row['id']), {
+                                'status': status,
+                                'buyer_email': buyer_email,
+                                'buyer_phone': buyer_phone,
+                                'booking_time': booking_time,
+                                'payment_status': paymentstatus
+                            })
+                        else:
+                            update_phone_mysql(int(row['id']), {
+                                'status': status,
+                                'payment_status': paymentstatus,
+                                'selling_time': selling_time
 
-                        })
-                    st.success(f"Phone ID {row['id']} updated successfully!")
-                    time.sleep(5)
-                    st.rerun()
+                            })
+                        st.success(f"Phone ID {row['id']} updated successfully!")
+                        time.sleep(5)
+                        st.rerun()
         else:
             st.header("📋 Phones You Have Booked")
             timer_placeholder = st.empty()  # Create a placeholder for the timer
@@ -357,6 +362,15 @@ else:
                 st.markdown(f"**Sold Time:** {phone['booking_time']}")
                 st.markdown(f"**Payment status:** {phone['payment_status']}")
                 st.markdown(f"**Buyer Address:** {phone['address']}")
+                st.markdown(f"**Shipping status:** {phone['shipping_status']}")
+                if phone['shipping_status'] == '':
+                    if st.button(f"Mark as Shipped for {phone['model']}", key=f"ship_{phone['id']}"):
+                        update_phone_mysql(int(phone['id']), {
+                            'shipping_status': 'Shipped'
+                        })
+                        st.success(f"Phone ID {phone['id']} marked as shipped!")
+                        time.sleep(5)
+                        st.rerun()
 
     else:  # Default to "Available Phones"
         st.header("📱 Available Phones")
