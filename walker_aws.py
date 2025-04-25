@@ -294,7 +294,7 @@ else:
                                     'payment_status': '',
                                     'selling_time': ''
                                 })
-                                st.success("Booking cancelled for {phone['model']}", key=f"cancel_{phone['id']}. Phone is now available.")
+                                st.success(f"Booking cancelled for {phone['model']}. Phone is now available.")
                                 time.sleep(5)
                                 st.rerun()
                             except Exception as e:
