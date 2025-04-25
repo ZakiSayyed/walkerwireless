@@ -266,8 +266,8 @@ else:
                         st.success(f"Booking expired for {(phones['model']['id'].values[0])}. Phone is now available.")
                         time.sleep(5)
                         st.rerun()
-            # else:
-            #     st.info("No active bookings found.")
+            else:
+                st.info("No active bookings found.")
             
             if st.button("Refresh"):
                 st.rerun()
@@ -299,28 +299,6 @@ else:
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"Error cancelling booking: {e}")                                
-                        # else:
-                        #     if st.button(f"Confirm Cancel Booking for {phone['model']}", key=f"confirm_cancel_{phone['id']}"):
-                        #         print("Clicked on confirm cancel booking")  # Debug: Check if this button is clicked
-                        #         try:
-                        #             update_phone_mysql(int(phone['id']), {
-                        #                 'status': 'available',
-                        #                 'buyer_email': '',
-                        #                 'buyer_phone': '',
-                        #                 'booking_time': '',
-                        #                 'payment_status': '',
-                        #                 'selling_time': ''
-                        #             })
-                        #             st.success("Booking cancelled. Phone is now available.")
-                        #             time.sleep(5)
-                        #             st.rerun()
-                        #         except Exception as e:
-                        #             st.error(f"Error cancelling booking: {e}")
-                        #     elif st.button(f"Cancel Cancellation for {phone['model']}", key=f"cancel_cancellation_{phone['id']}"):
-                        #         st.session_state[f"cancel_{phone['id']}"] = False
-                        #         st.warning("Booking cancellation cancelled.")
-                        #         time.sleep(5)
-                        #         st.rerun()
             else:
                 st.info("You have not Booked any phones.")
 
@@ -416,15 +394,15 @@ else:
                         'booking_time': now
                     })
 
-                    st.success("Phone Booked. Please pay 5000 PKR and confirm receipt within 5 minutes.")
+                    st.success("Phone Booked. Please pay 5000 PKR as Token payment and confirm receipt within 5 minutes.")
                     time.sleep(5)  # Wait for 2 seconds before refreshing
                     st.rerun()
 
     # st.header("📤 Payment confirm")
     Booked_phones = phones[(phones['buyer_email'] == user['email']) & (phones['status'] == 'Booked')]
-
+    token_clear = phones[(phones['buyer_email'] == user['email']) & (phones['status'] == 'Verification pending') & (phones['full_payment'] == '') | (phones['full_payment'] == 'Paid')]
     for _, phone in Booked_phones.iterrows():
-        if st.button(f"Confirm payment for {phone['model']}, Rs. {phone['price']}"):
+        if st.button(f"Confirm Token payment for {phone['model']}, Rs. {phone['price']}"):
             update_phone_mysql(int(phone['id']), {
                 'payment_status': 'Pending',
                 'status': 'Verification pending'
@@ -432,7 +410,17 @@ else:
             st.success("Payment submited for review")
             time.sleep(5)
             st.rerun()
-
+    for _, phone in token_clear.iterrows():
+        if phone['full_payment'] == '':
+            if st.button(f"Confirm Full payment for {phone['model']}, Rs. {phone['price']}"):
+                update_phone_mysql(int(phone['id']), {
+                    'payment_status': 'Pending',
+                    'status': 'Verification pending',                
+                    'full_payment': 'Paid'
+                })
+                st.success("Payment submited for review")
+                time.sleep(5)
+                st.rerun()
 
     if st.button("Logout"):
         st.session_state.user = None
