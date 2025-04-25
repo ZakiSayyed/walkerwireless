@@ -52,11 +52,27 @@ def load_sold_mysql():
 def save_new_phone_mysql(data):
     engine = get_engine()
     with engine.connect() as conn:
-        query = text("""
-            INSERT INTO Phones (model, specs, `condition`, price, video1, status, buyer_email, buyer_phone, booking_time, payment_status)
-            VALUES (:model, :specs, :condition, :price, :video1, :status, :buyer_email, :buyer_phone, :booking_time, :payment_status)
-        """)
-        conn.execute(query, data)
+        try:
+            # Get the latest ID from the Phones table
+            latest_id_query = text("SELECT MAX(id) AS max_id FROM Phones")
+            result = conn.execute(latest_id_query).fetchone()
+            latest_id = result[0] if result[0] is not None else 0  # Access the first element of the tuple
+            new_id = latest_id + 1  # Increment the ID for the new record
+
+            # Add the new ID to the data dictionary
+            data['id'] = new_id
+
+            # Insert the new phone record
+            query = text("""
+                INSERT INTO Phones (id, model, specs, `condition`, price, video1, status)
+                VALUES (:id, :model, :specs, :condition, :price, :video1, :status)
+            """)
+            conn.execute(query, data)
+            conn.commit()  # Explicitly commit the transaction
+            print(f"New phone added with ID: {new_id}")  # Debug: Confirm the new ID
+        except Exception as e:
+            print(f"Error inserting record: {e}")  # Debug: Print the error
+
 
 # Update phone details in the database
 def update_phone_mysql(phone_id, updates):
@@ -270,7 +286,7 @@ else:
 
                         if st.button(f"Cancel Booking for {phone['model']}", key=f"cancel_{phone['id']}"):
                             try:
-                                update_phone_mysql(int(phone['id']), {
+                                update_phone_mysql(int(phones[phones['buyer_email'] == user['email']]['id'].values[0]), {
                                     'status': 'available',
                                     'buyer_email': '',
                                     'buyer_phone': '',
@@ -334,8 +350,16 @@ else:
             price = st.number_input("Price (PKR)", min_value=1000, key="price")
             video1 = st.text_input("Video URL", key="video1")
             submitted = st.form_submit_button("Add Phone")
+
             if submitted:
-                new_data = [model, specs, condition, price, video1, "available", "", "", "", ""]
+                new_data = {
+                    'model': model,
+                    'specs': specs,
+                    'condition': condition,
+                    'price': price,
+                    'video1': video1,
+                    'status': 'available'
+                }
                 save_new_phone_mysql(new_data)
                 st.success("Phone added successfully!")
 
