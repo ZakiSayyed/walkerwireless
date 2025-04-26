@@ -214,6 +214,7 @@ else:
                     if new_status == "Sold":
                         status = "Sold"
                         paymentstatus = "Paid"
+                        shipping_status = "Pending"
                         selling_time = datetime.now()
                     elif new_status == "Rejected":
                         status = "available"
@@ -239,7 +240,8 @@ else:
                             update_phone_mysql(int(row['id']), {
                                 'status': status,
                                 'payment_status': paymentstatus,
-                                'selling_time': selling_time
+                                'selling_time': selling_time,
+                                'shipping_status': shipping_status
 
                             })
                         st.success(f"Phone ID {row['id']} updated successfully!")
@@ -271,8 +273,8 @@ else:
                         st.success(f"Booking expired for {(phones['model']['id'].values[0])}. Phone is now available.")
                         time.sleep(5)
                         st.rerun()
-            else:
-                st.info("No active bookings found.")
+            # else:
+            #     st.info("No active bookings found.")
             
             if st.button("Refresh"):
                 st.rerun()
@@ -297,13 +299,16 @@ else:
                                     'buyer_phone': '',
                                     'booking_time': '',
                                     'payment_status': '',
-                                    'selling_time': ''
+                                    'selling_time': '',
+                                    'full_payment': '',
+                                    'shipping_status': ''
+                
                                 })
                                 st.success(f"Booking cancelled for {phone['model']}. Phone is now available.")
                                 time.sleep(5)
                                 st.rerun()
                             except Exception as e:
-                                st.error(f"Error cancelling booking: {e}")                                
+                                st.error(f"Error cancelling booking: {e}")      
             else:
                 st.info("You have not Booked any phones.")
 
@@ -320,7 +325,8 @@ else:
                     st.markdown(f"**Specs:** {phone['specs']}")
                     st.markdown(f"**Condition:** {phone['condition']}")
                     st.markdown(f"**Purchase Time:** {phone['booking_time']}")
-                    st.markdown(f"**payment_status:** {phone['payment_status']}")
+                    st.markdown(f"**Payment Status:** {phone['payment_status']}")
+                    st.markdown(f"**Shipping Status:** {phone['shipping_status']}")
         else:
             st.info("You have not purchased any phones.")
 
@@ -363,7 +369,7 @@ else:
                 st.markdown(f"**Payment status:** {phone['payment_status']}")
                 st.markdown(f"**Buyer Address:** {phone['address']}")
                 st.markdown(f"**Shipping status:** {phone['shipping_status']}")
-                if phone['shipping_status'] == '':
+                if phone['shipping_status'] == 'Pending':
                     if st.button(f"Mark as Shipped for {phone['model']}", key=f"ship_{phone['id']}"):
                         update_phone_mysql(int(phone['id']), {
                             'shipping_status': 'Shipped'
@@ -414,25 +420,32 @@ else:
 
     # st.header("📤 Payment confirm")
     Booked_phones = phones[(phones['buyer_email'] == user['email']) & (phones['status'] == 'Booked')]
-    token_clear = phones[(phones['buyer_email'] == user['email']) & (phones['status'] == 'Verification pending') & (phones['full_payment'] == '') | (phones['full_payment'] == 'Paid')]
+    token_clear = phones[
+    (phones['buyer_email'] == user['email']) &
+    (phones['status'] == 'Verification pending') &
+    ((phones['full_payment'] == '') | (phones['full_payment'] == 'Paid'))
+]
+
+
     for _, phone in Booked_phones.iterrows():
         if st.button(f"Confirm Token payment for {phone['model']}, Rs. {phone['price']}"):
             update_phone_mysql(int(phone['id']), {
                 'payment_status': 'Pending',
                 'status': 'Verification pending'
             })
-            st.success("Payment submited for review")
+            st.success("Token Payment submited for review")
             time.sleep(5)
             st.rerun()
-    for _, phone in token_clear.iterrows():
-        if phone['full_payment'] == '':
-            if st.button(f"Confirm Full payment for {phone['model']}, Rs. {phone['price']}"):
-                update_phone_mysql(int(phone['id']), {
-                    'payment_status': 'Pending',
-                    'status': 'Verification pending',                
+    for _, phone1 in token_clear.iterrows():
+        # Check for empty or NaN full_payment
+        if pd.isna(phone1['full_payment']) or phone1['full_payment'] == '':
+            if st.button(f"Confirm Full payment for {phone1['model']}, Rs. {phone1['price']}"):
+                update_phone_mysql(int(phone1['id']), {
+                    # 'payment_status': 'Pending',
+                    # 'status': 'Verification pending',
                     'full_payment': 'Paid'
                 })
-                st.success("Payment submited for review")
+                st.success("Full Payment submitted for review")
                 time.sleep(5)
                 st.rerun()
 
