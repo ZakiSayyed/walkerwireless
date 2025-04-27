@@ -64,8 +64,8 @@ def save_new_phone_mysql(data):
 
             # Insert the new phone record
             query = text("""
-                INSERT INTO Phones (id, model, specs, `condition`, price, video1, status)
-                VALUES (:id, :model, :specs, :condition, :price, :video1, :status)
+                INSERT INTO Phones (id, model, specs, `condition`, price, video1, status, buyer_email, buyer_phone, booking_time, payment_status, selling_time, full_payment, shipping_status)
+                VALUES (:id, :model, :specs, :condition, :price, :video1, :status, :buyer_email, :buyer_phone, :booking_time, :payment_status, :selling_time, :full_payment, :shipping_status)
             """)
             conn.execute(query, data)
             conn.commit()  # Explicitly commit the transaction
@@ -120,8 +120,8 @@ def reset_password_mysql(email, phone, new_password):
     conn.close()
 
 # --- App Setup ---
-st.set_page_config(page_title="Walker Wireless", layout="wide")
-st.title("📱 Walker Wireless")
+st.set_page_config(page_title="Your Store Name", layout="wide")
+st.title("📱 Your Store Name")
 
 if "user" not in st.session_state:
     st.session_state.user = None
@@ -347,7 +347,14 @@ else:
                     'condition': condition,
                     'price': price,
                     'video1': video1,
-                    'status': 'available'
+                    'status': 'available',
+                    'buyer_email': '',
+                    'buyer_phone': '',
+                    'booking_time': '',
+                    'payment_status': '',
+                    'selling_time': '',
+                    'full_payment': '0',
+                    'shipping_status': ''
                 }
                 save_new_phone_mysql(new_data)
                 st.success("Phone added successfully!")
@@ -422,8 +429,7 @@ else:
     Booked_phones = phones[(phones['buyer_email'] == user['email']) & (phones['status'] == 'Booked')]
     token_clear = phones[
     (phones['buyer_email'] == user['email']) &
-    (phones['status'] == 'Verification pending') &
-    ((phones['full_payment'] == '') | (phones['full_payment'] == 'Paid'))
+    (phones['status'] == 'Verification pending')
 ]
 
 
@@ -438,7 +444,7 @@ else:
             st.rerun()
     for _, phone1 in token_clear.iterrows():
         # Check for empty or NaN full_payment
-        if pd.isna(phone1['full_payment']) or phone1['full_payment'] == '':
+        if pd.isna(phone1['full_payment']) or phone1['full_payment'] in [0, '0', '']:
             if st.button(f"Confirm Full payment for {phone1['model']}, Rs. {phone1['price']}"):
                 update_phone_mysql(int(phone1['id']), {
                     # 'payment_status': 'Pending',
